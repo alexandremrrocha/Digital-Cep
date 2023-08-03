@@ -6,4 +6,5 @@ Uma biblioteca criada em PHP para busca de cep online utilizando a API do IBGE
 
 - PHP
 - Composer
+- PHPUnit
 
