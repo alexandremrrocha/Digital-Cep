@@ -1,15 +1,55 @@
 <?php
 
-    namespace Alexandre\DigitalCep;
+namespace Alexandre\DigitalCep;
 
-class Search{
+class Search
+{
     private $url = "https://viacep.com.br/ws/";
 
-    public function getAddressFromZipcode(string $zipCode){
+    public function getAddressFromZipcode(string $zipCode)
+    {
+        // Mantém apenas dígitos
+        $zipCode = preg_replace('/\D/', '', $zipCode);
 
-        $zipCode = preg_replace('/^0-9]/im', '', $zipCode);
-        $get = file_get_contents($this->url . $zipCode . "/json");
+        // CEP deve conter 8 dígitos
+        if (strlen($zipCode) !== 8) {
+            return (object) [
+                'erro' => true,
+                'mensagem' => 'CEP inválido. Informe 8 dígitos.'
+            ];
+        }
 
-        return (json_decode($get));
+        $url = $this->url . $zipCode . "/json";
+
+        // Contexto com timeout para evitar travas
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 5,
+                'ignore_errors' => true,
+                'header' => [
+                    'Accept: application/json'
+                ]
+            ]
+        ]);
+
+        $get = @file_get_contents($url, false, $context);
+
+        if ($get === false) {
+            return (object) [
+                'erro' => true,
+                'mensagem' => 'Falha ao conectar ao serviço ViaCEP.'
+            ];
+        }
+
+        $decoded = json_decode($get);
+        if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+            return (object) [
+                'erro' => true,
+                'mensagem' => 'Resposta inválida do serviço ViaCEP.'
+            ];
+        }
+
+        return $decoded;
     }
 }
